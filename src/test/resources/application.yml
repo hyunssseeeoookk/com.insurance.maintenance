@@ -1,0 +1,35 @@
+# =============================================== #
+#        TEST ENVIRONMENT CONFIGURATION           #
+# =============================================== #
+
+# 서버 포트를 0으로 설정하면, 테스트 실행 시마다 비어있는 랜덤 포트를 사용합니다.
+# 여러 테스트가 동시에 실행될 때 포트 충돌을 방지하는 좋은 방법입니다.
+server:
+  port: 0
+
+spring:
+  # 테스트 환경에서는 h2 메모리 모드를 사용하는 것이 더 빠르고 격리된 환경을 제공합니다.
+  # 물론, 기존의 tcp 모드를 그대로 사용해도 괜찮습니다.
+  datasource:
+    url: jdbc:h2:mem:testdb # 테스트용 DB는 보통 testdb 라는 이름을 씁니다.
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트 시작 시 테이블 생성, 종료 시 테이블 삭제 (가장 깔끔)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        # 이 두 옵션이 실제 SQL을 예쁘게 보여주는 핵심입니다.
+        format_sql: true
+        use_sql_comments: true
+
+# ==================================================== #
+#        ★★★★★ 여기가 가장 중요한 부분 ★★★★★        #
+#  테스트 환경에서 실행될 쿼리 로그를 활성화합니다.    #
+# ==================================================== #
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql: trace

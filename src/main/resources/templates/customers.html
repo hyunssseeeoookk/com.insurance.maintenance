@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>고객 목록</title>
+    <style>
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h1>고객 목록</h1>
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>연락처</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- model에 담겨온 "customers" 리스트를 순회하며 <tr>을 반복 생성 -->
+    <tr th:each="customer : ${customers}">
+        <td th:text="${customer.id}">1</td>
+        <td th:text="${customer.name}">홍길동</td>
+        <td th:text="${customer.phoneNumber}">010-1234-5678</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
