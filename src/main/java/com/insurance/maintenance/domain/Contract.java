@@ -14,6 +14,7 @@ public class Contract {
     @Column(name="contract_id")
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String accountNo;   // 증권번호
 
     @Enumerated(EnumType.STRING)
@@ -28,8 +29,18 @@ public class Contract {
     @JoinColumn(name = "product_id")
     private InsuranceProduct product;
 
-    // 연관관계 편의메서드
-    public void setCustomer(Customer customer){
+    // --- 생성 메소드 ---
+    public static Contract createContract(Customer customer, InsuranceProduct product, String accountNo, ContractStatus status) {
+        Contract contract = new Contract();
+        contract.product = product;
+        contract.accountNo = accountNo;
+        contract.status = status;
+        contract.setCustomer(customer);
+        return contract;
+    }
+
+    // --- 연관관계 편의 메소드 ---
+    public void setCustomer(Customer customer) {
         this.customer = customer;
         customer.getContracts().add(this);
     }

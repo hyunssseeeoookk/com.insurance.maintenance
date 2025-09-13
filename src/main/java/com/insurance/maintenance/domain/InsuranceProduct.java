@@ -14,8 +14,6 @@ public class InsuranceProduct {
     @Column(name = "product_id")
     private Long id;
     private String name;
-
-    // 테스트를 위해 임시로 public 생성자 추가 (나중에 Builder 패턴으로 변경 권장)
     public InsuranceProduct(String name) {
         this.name = name;
     }

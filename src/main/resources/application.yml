@@ -4,9 +4,12 @@ server:
 
 # 스프링 관련 설정
 spring:
+  profiles:
+    active: local
   # 데이터소스(DB) 설정
   datasource:
-    url: jdbc:h2:tcp://localhost/~/maintenance
+    url: jdbc:h2:mem:testdb # 테스트용 DB는 보통 testdb 라는 이름을 씁니다.
+#    url: jdbc:h2:tcp://localhost/~/maintenance
     username: sa
     password:
     driver-class-name: org.h2.Driver
