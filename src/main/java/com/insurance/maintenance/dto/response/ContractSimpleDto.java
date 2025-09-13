@@ -12,10 +12,14 @@ public class ContractSimpleDto {
     private Long contractId;
     private String accountNo;
     private ContractStatus status;
+    private String customerName;
+    private String productName;
 
     public ContractSimpleDto(Contract contract) {
         this.contractId = contract.getId();
         this.accountNo = contract.getAccountNo();
         this.status = contract.getStatus();
+        this.customerName = contract.getCustomer().getName();
+        this.productName = contract.getProduct().getName();
     }
 }

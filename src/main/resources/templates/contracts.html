@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>계약 목록</title>
+    <style>
+        .pagination { list-style: none; display: flex; }
+        .pagination li { margin: 0 5px; }
+        .pagination .active a { font-weight: bold; color: red; }
+        .pagination .disabled a { color: #ccc; pointer-events: none; }
+    </style>
+</head>
+<body>
+<h1>계약 목록</h1>
+<table>
+    <thead>
+    <tr>
+        <th>계약 ID</th>
+        <th>증권번호</th>
+        <th>고객명</th>
+        <th>상품명</th>
+        <th>상태</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="contract : ${contractsPage.content}">
+        <td th:text="${contract.contractId}">101</td>
+        <td th:text="${contract.accountNo}">A-0001</td>
+        <td th:text="${contract.customerName}">홍길동</td>
+        <td th:text="${contract.productName}">튼튼보험</td>
+        <td th:text="${contract.status}">NORMAL</td>
+    </tr>
+    </tbody>
+</table>
+
+<!-- 페이징 컨트롤 -->
+<nav th:if="${contractsPage.totalPages > 0}" style="margin-top: 20px;">
+    <ul class="pagination">
+        <!-- 처음 페이지로 이동 -->
+        <li><a th:href="@{/contracts(page=0, size=${contractsPage.size})}">&laquo;&laquo;</a></li>
+        <!-- 이전 페이지로 이동 -->
+        <li th:classappend="${contractsPage.first} ? 'disabled'">
+            <a th:href="${contractsPage.first} ? '#' : @{/contracts(page=${contractsPage.number - 1}, size=${contractsPage.size})}">&laquo;</a>
+        </li>
+        <!-- 페이지 번호 루프 -->
+        <li th:each="pageNum : ${#numbers.sequence(0, contractsPage.totalPages - 1)}"
+            th:classappend="${pageNum == contractsPage.number} ? 'active'">
+            <a th:href="@{/contracts(page=${pageNum}, size=${contractsPage.size})}" th:text="${pageNum + 1}"></a>
+        </li>
+        <!-- 다음 페이지로 이동 -->
+        <li th:classappend="${contractsPage.last} ? 'disabled'">
+            <a th:href="${contractsPage.last} ? '#' : @{/contracts(page=${contractsPage.number + 1}, size=${contractsPage.size})}">&raquo;</a>
+        </li>
+        <!-- 마지막 페이지로 이동 -->
+        <li><a th:href="@{/contracts(page=${contractsPage.totalPages - 1}, size=${contractsPage.size})}">&raquo;&raquo;</a></li>
+    </ul>
+</nav>
+</body>
+</html>
