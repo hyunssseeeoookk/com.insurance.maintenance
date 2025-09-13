@@ -1,7 +1,7 @@
 package com.insurance.maintenance.controller.api;
 
-import com.insurance.maintenance.dto.response.CustomerDetailResponseDto;
-import com.insurance.maintenance.dto.response.CustomerResponseDto;
+import com.insurance.maintenance.dto.response.CustomerDetailDto;
+import com.insurance.maintenance.dto.response.CustomerDto;
 import com.insurance.maintenance.service.CustomerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,14 +20,14 @@ public class CustomerApiController {
     private final CustomerService customerService;
 
     @GetMapping
-    public ResponseEntity<List<CustomerResponseDto>> getCustomer(){
-        List<CustomerResponseDto> customers = customerService.findAllCustomers();
+    public ResponseEntity<List<CustomerDto>> getCustomer(){
+        List<CustomerDto> customers = customerService.findAllCustomers();
         return ResponseEntity.ok(customers);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<CustomerDetailResponseDto> getCustomerDetails(@PathVariable Long id){
-        CustomerDetailResponseDto customerDetails = customerService.findCustomerDetails(id);
+    public ResponseEntity<CustomerDetailDto> getCustomerDetails(@PathVariable Long id){
+        CustomerDetailDto customerDetails = customerService.findCustomerDetails(id);
         return ResponseEntity.ok(customerDetails);
     }
 }
