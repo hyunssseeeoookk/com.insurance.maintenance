@@ -23,6 +23,10 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     private ContractStatus status;  // 계약상태 Enum
 
+    // 매월 납입 기일 (1 ~ 31)
+    @Column(nullable = false)
+    private int paymentDueDate;
+
     // N:1 연관관계의 주인
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
@@ -37,11 +41,12 @@ public class Contract {
     private List<Payment> payments = new ArrayList<>();
 
     // --- 생성 메소드 ---
-    public static Contract createContract(Customer customer, InsuranceProduct product, String accountNo, ContractStatus status) {
+    public static Contract createContract(Customer customer, InsuranceProduct product, String accountNo, ContractStatus status, int paymentDueDate) {
         Contract contract = new Contract();
         contract.product = product;
         contract.accountNo = accountNo;
         contract.status = status;
+        contract.paymentDueDate = paymentDueDate; // 생성 시 납입일 지정
         contract.setCustomer(customer);
         return contract;
     }

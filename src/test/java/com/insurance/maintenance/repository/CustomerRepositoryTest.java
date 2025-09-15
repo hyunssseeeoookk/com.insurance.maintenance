@@ -30,10 +30,12 @@ public class CustomerRepositoryTest {
         em.persist(customer);
         em.persist(product);
 
-        Contract contract1 = Contract.createContract(customer, product, "A-001", ContractStatus.NORMAL);
-        Contract contract2 = Contract.createContract(customer, product, "A-002", ContractStatus.LAPSE);
-        em.persist(contract1);
-        em.persist(contract2);
+        // 페이징 테스트를 위해 5개의 계약 데이터 생성
+        int dueDate = 15; // 임의의 납입일자 (예: 15일)
+        for (int i = 0; i < 5; i++) {
+            // [수정] 마지막 파라미터로 dueDate를 추가합니다.
+            em.persist(Contract.createContract(customer, product, "A-00" + i, ContractStatus.NORMAL, dueDate));
+        }
 
         em.flush(); // db에 전달
         em.clear(); // 영속성 컨텍스트 초기화

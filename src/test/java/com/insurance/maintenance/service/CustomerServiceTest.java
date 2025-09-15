@@ -31,8 +31,8 @@ class CustomerServiceTest {
     void setUp() {
         customer = customerRepository.save(Customer.builder().name("홍길동").build());
         InsuranceProduct product = productRepository.save(new InsuranceProduct("테스트상품"));
-        contractRepository.save(Contract.createContract(customer, product, "A-001", ContractStatus.NORMAL));
-        contractRepository.save(Contract.createContract(customer, product, "A-002", ContractStatus.LAPSE));
+        contractRepository.save(Contract.createContract(customer, product, "A-001", ContractStatus.NORMAL,25));
+        contractRepository.save(Contract.createContract(customer, product, "A-002", ContractStatus.LAPSE,25));
     }
 
     @DisplayName("특정 고객의 상세 정보와 보유 계약 목록을 함께 조회한다.")
