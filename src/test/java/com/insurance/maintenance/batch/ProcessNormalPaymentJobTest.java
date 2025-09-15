@@ -1,15 +1,8 @@
 package com.insurance.maintenance.batch;
 
-import com.insurance.maintenance.domain.Contract;
-import com.insurance.maintenance.domain.ContractStatus;
-import com.insurance.maintenance.domain.Customer;
-import com.insurance.maintenance.domain.InsuranceProduct;
-import com.insurance.maintenance.repository.ContractRepository;
-import com.insurance.maintenance.repository.CustomerRepository;
-import com.insurance.maintenance.repository.InsuranceProductRepository;
-import com.insurance.maintenance.repository.PaymentRepository;
+import com.insurance.maintenance.domain.*;
+import com.insurance.maintenance.repository.*;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.batch.core.Job;
@@ -21,65 +14,53 @@ import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-
 import java.time.LocalDate;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.batch.core.BatchStatus.COMPLETED;
 
 @SpringBatchTest
-@SpringBootTest
+@SpringBootTest // 어떠한 추가 설정도 없이, 가장 기본적이고 강력한 형태로 사용합니다.
 class ProcessNormalPaymentJobTest {
 
     @Autowired private JobLauncherTestUtils jobLauncherTestUtils;
-    @Autowired @Qualifier("processNormalPaymentJob")
-    private Job processNormalPaymentJob;
+    @Autowired @Qualifier("processNormalPaymentJob") private Job jobToTest;
+
     @Autowired private CustomerRepository customerRepository;
     @Autowired private InsuranceProductRepository productRepository;
     @Autowired private ContractRepository contractRepository;
     @Autowired private PaymentRepository paymentRepository;
 
-    @BeforeEach
-    void setUp() {
-        jobLauncherTestUtils.setJob(processNormalPaymentJob);
-
-        Customer customer = customerRepository.save(Customer.builder().name("테스트고객").build());
-        InsuranceProduct product = productRepository.save(new InsuranceProduct("테스트상품"));
-
-        // given: 정상 계약 2건, 실효 계약 1건
-        // -----[여기가 핵심 수정 부분]-----
-        int targetDate = LocalDate.now().minusDays(1).getDayOfMonth(); // 어제 날짜
-
-        // createContract 호출 시, 마지막 인자로 paymentDueDate(targetDate)를 추가합니다.
-        contractRepository.save(Contract.createContract(customer, product, "N-001", ContractStatus.NORMAL, targetDate));
-        contractRepository.save(Contract.createContract(customer, product, "N-002", ContractStatus.NORMAL, targetDate));
-        contractRepository.save(Contract.createContract(customer, product, "L-001", ContractStatus.LAPSE, targetDate));
-    }
-
     @AfterEach
     void tearDown() {
         paymentRepository.deleteAllInBatch();
         contractRepository.deleteAllInBatch();
-        productRepository.deleteAllInBatch();
         customerRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
     }
 
-    @DisplayName("정상 상태의 계약에 대해서만 납입 이력을 생성한다.")
     @Test
-    void processNormalPaymentJob_createsPayments_onlyForNormalContracts() throws Exception {
+    @DisplayName("정상 상태이고 어제가 납입일인 계약 2건에 대해서만 납입 이력을 생성한다.")
+    void processNormalPaymentJob_createsPayments_onlyForTargetContracts() throws Exception {
         // given
         int yesterdayDay = LocalDate.now().minusDays(1).getDayOfMonth();
+        Customer customer = customerRepository.save(Customer.builder().name("테스트고객").build());
+        InsuranceProduct product = productRepository.save(new InsuranceProduct("테스트상품"));
+
+        contractRepository.save(Contract.createContract(customer, product, "N-YESTERDAY-1", ContractStatus.NORMAL, yesterdayDay));
+        contractRepository.save(Contract.createContract(customer, product, "N-YESTERDAY-2", ContractStatus.NORMAL, yesterdayDay));
+        contractRepository.save(Contract.createContract(customer, product, "L-YESTERDAY-1", ContractStatus.LAPSE, yesterdayDay));
+
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("run.id", "paymentJobTest-" + System.currentTimeMillis())
+                .addString("run.id", "normalJobTest-" + System.currentTimeMillis())
                 .addLong("yesterdayDay", (long) yesterdayDay)
                 .toJobParameters();
 
         // when
+        jobLauncherTestUtils.setJob(jobToTest);
         JobExecution jobExecution = jobLauncherTestUtils.launchJob(jobParameters);
 
         // then
         assertThat(jobExecution.getStatus()).isEqualTo(COMPLETED);
-        // setUp에서 만든 '정상' 계약 2건에 대해서만 Payment가 생성되어야 합니다.
         assertThat(paymentRepository.count()).isEqualTo(2);
     }
 }
