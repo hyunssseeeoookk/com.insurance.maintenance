@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,42 +19,75 @@ public class Contract {
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String accountNo;   // 증권번호
+    private String accountNo;
 
     @Enumerated(EnumType.STRING)
-    private ContractStatus status;  // 계약상태 Enum
+    private ContractStatus status;
 
-    // 매월 납입 기일 (1 ~ 31)
     @Column(nullable = false)
     private int paymentDueDate;
 
-    // N:1 연관관계의 주인
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
+    private LocalDate lastPaymentDate;
+
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id")
+    @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "product_id")
     private InsuranceProduct product;
 
-    // 계약이 되면, 관련된 모든 납입이력도 함께 삭제되도록 Cascade설정
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
     private List<Payment> payments = new ArrayList<>();
 
-    // --- 생성 메소드 ---
-    public static Contract createContract(Customer customer, InsuranceProduct product, String accountNo, ContractStatus status, int paymentDueDate) {
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
+    private List<LapseHistory> lapseHistories = new ArrayList<>();
+
+    public static Contract createContract(Customer c, InsuranceProduct p, String a, ContractStatus s, int d) {
         Contract contract = new Contract();
-        contract.product = product;
-        contract.accountNo = accountNo;
-        contract.status = status;
-        contract.paymentDueDate = paymentDueDate; // 생성 시 납입일 지정
-        contract.setCustomer(customer);
+        contract.product = p;
+        contract.accountNo = a;
+        contract.status = s;
+        contract.paymentDueDate = d;
+        contract.setCustomer(c);
+        if (s == ContractStatus.NORMAL) {
+            contract.lastPaymentDate = LocalDate.now();
+        }
         return contract;
     }
 
-    // --- 연관관계 편의 메소드 ---
     public void setCustomer(Customer customer) {
         this.customer = customer;
-        customer.getContracts().add(this);
+        if(customer != null) {
+            customer.getContracts().add(this);
+        }
+    }
+
+    public void addPayment(Payment payment) {
+        this.payments.add(payment);
+        this.lastPaymentDate = LocalDate.from(payment.getPaymentDate());
+    }
+
+    public void toLapse(String reason){
+        if(this.status != ContractStatus.NORMAL){
+            throw new IllegalStateException("정상 상태의 계약만 실효 처리할 수 있습니다.");
+        }
+        this.status = ContractStatus.LAPSE;
+        this.addLapseHistory(reason);
+    }
+
+    public void reinstate(){
+        if(this.status != ContractStatus.LAPSE){
+            throw new IllegalStateException("실효 상태의 계약만 부활 처리할 수 있습니다.");
+        }
+        this.status = ContractStatus.NORMAL;
+    }
+
+    private void addLapseHistory(String reason) {
+        LapseHistory history = LapseHistory.createLapseHistory(this,reason);
+        this.lapseHistories.add(history);
+    }
+
+    // 테스트 코드의 편의를 위한 메소드
+    public void updateLastPaymentDateForTest(LocalDate date) {
+        this.lastPaymentDate = date;
     }
 }
