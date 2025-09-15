@@ -32,9 +32,13 @@ public class ContractRepositoryTest {
         em.persist(customer);
         em.persist(product);
 
-        for (int i = 0 ; i < 5; i++){
-            em.persist(Contract.createContract(customer,product,"A-00"+i, ContractStatus.NORMAL));
+        // 페이징 테스트를 위해 5개의 계약 데이터 생성
+        int dueDate = 15; // 임의의 납입일자 (예: 15일)
+        for (int i = 0; i < 5; i++) {
+            // [수정] 마지막 파라미터로 dueDate를 추가합니다.
+            em.persist(Contract.createContract(customer, product, "A-00" + i, ContractStatus.NORMAL, dueDate));
         }
+
         em.flush();
         em.clear();
     }

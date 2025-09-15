@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 @Profile("local")
 @Component
 @RequiredArgsConstructor
@@ -25,70 +27,64 @@ public class SampleDataInitializer implements ApplicationRunner {
     private final ContractRepository contractRepository;
     private final InsuranceProductRepository productRepository;
 
-    /**
-     * 실행 시점의 진입점.
-     * 필요한 기능의 초기화 메소드를 선택적으로 호출.
-     */
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
         log.info("===== Initializing Sample Data =====");
 
-        // [F-01] 고객 목록 조회 기능만 테스트하고 싶을 때:
-        //initForF01_CustomerList();
-
-        // [F-02] 고객 상세 조회 기능만 테스트하고 싶을 때:
-        // initForF02_CustomerDetail();
-
-        // [F-03] 계약 목록 조회 기능만 테스트하고 싶을 때:
-         initForF03_ContractList();
+        // --- 필요한 데이터 초기화 메소드를 여기에 호출 ---
+        initForF01_CustomerList();
+        initForF03_ContractList(); // F-02 상세 조회에서도 이 데이터를 사용
+        initForB01_PaymentBatch(); // B-01 배치 테스트용 데이터 추가
 
         log.info("===== Sample Data Initialization Finished =====");
     }
 
-    /**
-     * [F-01] 고객 목록 조회 기능을 위한 독립적인 샘플 데이터를 생성.
-     */
     private void initForF01_CustomerList() {
         log.info(">>> Initializing data for [F-01] Customer List");
-        customerRepository.save(Customer.builder().name("둘리-F01").phoneNumber("010-1111-0001").build());
-        customerRepository.save(Customer.builder().name("아구몬-F01").phoneNumber("010-2222-0001").build());
+        // 이 Runner가 실행될 때마다 기존 데이터를 삭제하여 중복을 방지 (선택적)
+        contractRepository.deleteAllInBatch();
+        customerRepository.deleteAllInBatch();
+        productRepository.deleteAllInBatch();
+
+        customerRepository.save(Customer.builder().name("고객-F01-홍길동").phoneNumber("010-1111-0001").build());
+        customerRepository.save(Customer.builder().name("고객-F01-김유신").phoneNumber("010-2222-0001").build());
     }
 
-    /**
-     * [F-02] 고객 상세 조회 기능을 위한 독립적인 샘플 데이터를 생성.
-     */
-    private void initForF02_CustomerDetail() {
-        log.info(">>> Initializing data for [F-02] Customer Detail");
-        // 1. 이 기능 테스트에 필요한 고객을 새로 생성
-        Customer customerForF02 = customerRepository.save(
-                Customer.builder().name("파이리-F02").phoneNumber("010-3333-0002").build()
-        );
-
-        // 2. 이 기능 테스트에 필요한 상품을 새로 생성
-        InsuranceProduct productForF02 = productRepository.save(new InsuranceProduct("상세조회용 보험"));
-
-        // 3. 위에서 만든 고객과 상품으로 계약 데이터를 생성
-        contractRepository.save(Contract.createContract(customerForF02, productForF02, "F02-0001", ContractStatus.NORMAL));
-        contractRepository.save(Contract.createContract(customerForF02, productForF02, "F02-0002", ContractStatus.LAPSE));
-    }
-
-    /**
-     * [F-03] 계약 목록 조회 기능을 위한 독립적인 샘플 데이터를 생성.
-     */
     private void initForF03_ContractList() {
-        log.info(">>> Initializing data for [F-03] Contract List");
-        // 1. 페이징 테스트에 필요한 고객과 상품을 새로 생성
-        Customer customerForF03 = customerRepository.save(
-                Customer.builder().name("피카츄-F03").phoneNumber("010-4444-0003").build()
-        );
-        InsuranceProduct productForF03 = productRepository.save(new InsuranceProduct("계약목록용 보험"));
+        log.info(">>> Initializing data for [F-03] Contract List (used by F-02 as well)");
+        Customer customer = customerRepository.save(Customer.builder().name("고객-F03-강감찬").build());
+        InsuranceProduct product = productRepository.save(new InsuranceProduct("계약목록용 보험"));
 
-        // 2. 페이징을 확인할 수 있도록 계약 데이터를 15건 대량 생성
+        // [F-03] 오류 수정: createContract 호출 시 납입일자(임의의 값) 추가
         for (int i = 1; i <= 15; i++) {
             contractRepository.save(
-                    Contract.createContract(customerForF03, productForF03, "F03-" + String.format("%04d", i), ContractStatus.NORMAL)
+                    Contract.createContract(customer, product, "F03-" + String.format("%04d", i), ContractStatus.NORMAL, 15) // 납입일 15일로 고정
             );
         }
+    }
+
+    private void initForB01_PaymentBatch() {
+        log.info(">>> Initializing data for [B-01] Payment Batch Test");
+
+        int yesterday = LocalDate.now().minusDays(1).getDayOfMonth();
+        int today = LocalDate.now().getDayOfMonth();
+        int tomorrow = LocalDate.now().plusDays(1).getDayOfMonth();
+
+        Customer customer = customerRepository.save(Customer.builder().name("고객-B01-이순신").build());
+        InsuranceProduct product = productRepository.save(new InsuranceProduct("배치테스트용 보험"));
+
+        // 시나리오 1: 성공 대상 (정상, 어제)
+        contractRepository.save(Contract.createContract(customer, product, "B01-SUCCESS-1", ContractStatus.NORMAL, yesterday));
+        contractRepository.save(Contract.createContract(customer, product, "B01-SUCCESS-2", ContractStatus.NORMAL, yesterday));
+
+        // 시나리오 2: 실패 대상 (실효, 어제)
+        contractRepository.save(Contract.createContract(customer, product, "B01-FAIL-LAPSE", ContractStatus.LAPSE, yesterday));
+
+        // 시나리오 3: 실패 대상 (정상, 오늘)
+        contractRepository.save(Contract.createContract(customer, product, "B01-FAIL-TODAY", ContractStatus.NORMAL, today));
+
+        // 시나리오 4: 실패 대상 (정상, 내일)
+        contractRepository.save(Contract.createContract(customer, product, "B01-FAIL-TOMORROW", ContractStatus.NORMAL, tomorrow));
     }
 }
