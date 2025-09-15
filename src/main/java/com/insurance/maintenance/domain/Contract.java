@@ -40,6 +40,40 @@ public class Contract {
     @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
     private List<Payment> payments = new ArrayList<>();
 
+    // 1:N관계
+    @OneToMany(mappedBy = "contract", cascade = CascadeType.ALL)
+    private List<LapseHistory> lapseHistories = new ArrayList<>();
+
+    /**
+     * 계약상태를 '실효'로 변경하고, 실효'이력'을 생성
+     * @param reason
+     */
+    public void toLapse(String reason){
+        if(this.status != ContractStatus.LAPSE_NOTICE){
+            throw new IllegalStateException("실효 예고 상태의 계약만 실효처리 가능");
+        }
+        this.status = ContractStatus.LAPSE;
+        // 연관관계 편의메서드를 통해 실효이력 추가
+        this.addLapseHistory(reason);
+    }
+
+    public void reinstate(){
+        if(this.status != ContractStatus.LAPSE){
+            throw new IllegalStateException("실효상태의 계약만 부활처리 가능");
+        }
+        this.status = ContractStatus.NORMAL;
+        // 부활 시 별도의 '부활이력' 엔티티 만들어 기록 필요
+    }
+
+    /**
+     * 연관관계 편의메서드
+     * @param reason
+     */
+    private void addLapseHistory(String reason) {
+        LapseHistory history = LapseHistory.createLapseHistory(this,reason);
+        this.lapseHistories.add(history);
+    }
+
     // --- 생성 메소드 ---
     public static Contract createContract(Customer customer, InsuranceProduct product, String accountNo, ContractStatus status, int paymentDueDate) {
         Contract contract = new Contract();
